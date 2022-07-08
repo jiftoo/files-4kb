@@ -1,6 +1,6 @@
 use std::{
     env, fs,
-    io::{stdout, Write},
+    io::{stdout, Error, Write},
     panic::set_hook,
     path,
     process::exit,
@@ -8,21 +8,21 @@ use std::{
     time::Duration,
 };
 
-fn traverse(path: &path::Path, list: &mut Vec<u64>) {
+fn traverse(path: &path::Path, list: &mut Vec<u64>) -> Result<(), Error> {
     if path.is_dir() {
-        let iter = fs::read_dir(path).unwrap().map(|x| x.unwrap());
+        let iter = fs::read_dir(path)?.map(|x| x.unwrap());
         for file in iter {
             if file.path().is_dir() {
-                traverse(file.path().as_path(), list)
+                if let Err(err) = traverse(file.path().as_path(), list) {
+                    print!("\n{err}: {}", file.path().to_string_lossy());
+                }
             } else {
                 let size = file.metadata();
-                match size {
-                    Ok(size) => list.push(size.len()),
-                    Err(_) => println!("Permission denied: {}", file.path().to_string_lossy()),
-                };
+                list.push(size.unwrap().len());
             }
         }
     }
+    Ok(())
 }
 
 fn main() {
@@ -34,9 +34,12 @@ fn main() {
         exit(0);
     }));
 
+    let _exe = env::current_exe().unwrap();
+    let exec_name = _exe.file_stem().unwrap().to_str().unwrap();
+
     let _a = env::args()
         .nth(1)
-        .expect("usage: traverse-dirs <path> [bound=4096]");
+        .expect(format!("usage: {exec_name} <path> [bound=4096]").as_str());
     let path: &path::Path = path::Path::new(&_a);
 
     let bound: u64 = env::args()
