@@ -57,7 +57,7 @@ fn main() {
     stdout().flush().ok();
 
     let mut list: Vec<u64> = Vec::with_capacity(50_000);
-    traverse(path, &mut list);
+    traverse(path, &mut list).unwrap();
 
     let size: u64 = list.iter().sum();
     println!("");
@@ -71,6 +71,10 @@ fn main() {
 
     let under4kb = list.iter().filter(|&x| x < &bound).count() as f64 / list.len() as f64;
     let over4kb = list.iter().filter(|&x| x >= &bound).count() as f64 / list.len() as f64;
-    println!("<4 KiB {:.1}%", under4kb * 100.);
-    println!(">4 KiB {:.1}%", over4kb * 100.);
+    println!(
+        "<{} {:.1}%",
+        human_bytes::human_bytes(bound as f64),
+        under4kb * 100.
+    );
+    println!(">{} {:.1}%", human_bytes::human_bytes(bound as f64), over4kb * 100.);
 }
